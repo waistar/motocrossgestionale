@@ -45,15 +45,20 @@ function loadAssets() {
   return assetsPromise;
 }
 
-export function reportRows(works) {
-  return [...works]
-    .sort((a, b) => b.date.localeCompare(a.date) || String(b.time || '').localeCompare(String(a.time || '')))
-    .map(work => [
-      work.date ? work.date.split('-').reverse().join('/') : '—',
-      /^([01]\d|2[0-3]):[0-5]\d$/.test(work.time || '') ? work.time : 'Non registrato',
-      String(work.name || 'Intervento'),
-      `${(Number(work.meter) || 0).toFixed(1)} h`,
-      String(work.notes || '—'),
+export function reportRows(state) {
+  return [
+    ...(state.sessions || []).map(session => ({ ...session, type: 'session' })),
+    ...(state.works || []).map(work => ({ ...work, type: 'work' })),
+  ]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(activity => [
+      activity.date ? activity.date.split('-').reverse().join('/') : '—',
+      activity.type === 'session' ? 'Uscita / allenamento' : 'Intervento',
+      String(activity.name || (activity.type === 'session' ? 'Uscita' : 'Intervento')),
+      activity.type === 'session'
+        ? `+${(Number(activity.hours) || 0).toFixed(1)} h di utilizzo`
+        : `${(Number(activity.meter) || 0).toFixed(1)} h contaore`,
+      String(activity.notes || '—'),
     ]);
 }
 
@@ -62,10 +67,10 @@ export function reportFilename(bike, date = new Date()) {
   const slug = identity.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'moto';
   const day = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
-  return `registro-interventi-${slug.toLowerCase()}-${day}.pdf`;
+  return `registro-attivita-${slug.toLowerCase()}-${day}.pdf`;
 }
 
-export async function createMaintenanceReport(state, generatedAt = new Date()) {
+export async function createActivityReport(state, generatedAt = new Date()) {
   const [, regular, bold, logo] = await loadAssets();
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
@@ -74,10 +79,10 @@ export async function createMaintenanceReport(state, generatedAt = new Date()) {
   doc.addFileToVFS('NotoSans-Bold.ttf', bold);
   doc.addFont('NotoSans-Bold.ttf', 'NotoSans', 'bold');
   doc.setFont('NotoSans', 'normal');
-  doc.setProperties({ title: 'Registro interventi - 410 La Placa', author: '410 La Placa', subject: 'Scheda moto e storico manutenzioni' });
+  doc.setProperties({ title: 'Attività recenti - 410 La Placa', author: '410 La Placa', subject: 'Scheda moto e cronologia completa delle attività' });
 
   const bike = state.bike || {};
-  const works = state.works || [];
+  const rows = reportRows(state);
   const totalHours = (Number(state.baseHours) || 0) + (state.sessions || []).reduce((sum, s) => sum + (Number(s.hours) || 0), 0);
   const issued = generatedAt.toLocaleString('it-IT', { dateStyle: 'short', timeStyle: 'short' });
   const left = 16;
@@ -104,11 +109,11 @@ export async function createMaintenanceReport(state, generatedAt = new Date()) {
   doc.rect(0, 0, 210, 3, 'F');
   doc.addImage(logo, 'PNG', left, 13, 18, 18);
   text('410 LA PLACA', 39, 20, { size: 15, bold: true });
-  text('MOTOCROSS · REGISTRO MANUTENZIONI', 39, 26, { size: 8, color: MUTED });
+  text('MOTOCROSS · REGISTRO ATTIVITÀ', 39, 26, { size: 8, color: MUTED });
   text('GENERATO IL', right, 18, { size: 7, color: MUTED, align: 'right' });
   text(issued, right, 24, { size: 8, align: 'right' });
-  text('Registro interventi', left, 47, { size: 25, bold: true });
-  text('Scheda della moto e cronologia delle manutenzioni eseguite.', left, 55, { size: 9, color: MUTED });
+  text('Attività recenti', left, 47, { size: 25, bold: true });
+  text('Cronologia completa di interventi, allenamenti e uscite.', left, 55, { size: 9, color: MUTED });
 
   doc.autoTable({
     startY: 64,
@@ -131,20 +136,18 @@ export async function createMaintenanceReport(state, generatedAt = new Date()) {
   });
   const summaryY = doc.lastAutoTable.finalY + 10;
   text(`Contaore attuale: ${totalHours.toFixed(1)} h`, left, summaryY, { size: 10, bold: true });
-  text(`${works.length} interventi registrati`, right, summaryY, { size: 9, color: MUTED, align: 'right' });
-  const rows = reportRows(works);
-  const legacyTimes = works.some(work => !/^([01]\d|2[0-3]):[0-5]\d$/.test(work.time || ''));
+  text(`${rows.length} attività registrate`, right, summaryY, { size: 9, color: MUTED, align: 'right' });
   doc.autoTable({
     startY: summaryY + 9,
-    margin: { left, right: left, top: 28, bottom: legacyTimes ? 27 : 20 },
-    head: [['DATA', 'ORARIO', 'INTERVENTO', 'CONTAORE', 'NOTE TECNICHE']],
-    body: rows.length ? rows : [[{ content: 'Nessun intervento registrato.', colSpan: 5, styles: { halign: 'center', textColor: MUTED, cellPadding: 12 } }]],
+    margin: { left, right: left, top: 28, bottom: 20 },
+    head: [['DATA', 'TIPO', 'ATTIVITÀ / PISTA', 'ORE', 'NOTE']],
+    body: rows.length ? rows : [[{ content: 'Nessuna attività registrata.', colSpan: 5, styles: { halign: 'center', textColor: MUTED, cellPadding: 12 } }]],
     theme: 'grid',
     willDrawPage: pageBackground,
     styles: { font: 'NotoSans', fontSize: 8, cellPadding: 3, textColor: INK, lineColor: [226, 229, 233], lineWidth: .15, overflow: 'linebreak' },
     headStyles: { fillColor: INK, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },
     alternateRowStyles: { fillColor: [250, 250, 251] },
-    columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 25 }, 2: { cellWidth: 44 }, 3: { cellWidth: 24 }, 4: { cellWidth: 60 } },
+    columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 28 }, 2: { cellWidth: 48 }, 3: { cellWidth: 29 }, 4: { cellWidth: 48 } },
     rowPageBreak: 'avoid',
     showHead: 'everyPage',
   });
@@ -155,20 +158,19 @@ export async function createMaintenanceReport(state, generatedAt = new Date()) {
     if (page > 1) {
       doc.setFillColor(...ORANGE);
       doc.rect(0, 0, 210, 3, 'F');
-      text('410 LA PLACA / REGISTRO INTERVENTI', left, 16, { size: 9, bold: true });
+      text('410 LA PLACA / REGISTRO ATTIVITÀ', left, 16, { size: 9, bold: true });
     }
     doc.setDrawColor(226, 229, 233);
     doc.line(left, 278, left + width, 278);
-    if (legacyTimes) text('“Non registrato”: l’orario non è presente nello storico originale.', left, 284, { size: 7, color: MUTED });
-    text('Report di manutenzione', left, 291, { size: 7, color: MUTED });
+    text('Registro attività', left, 291, { size: 7, color: MUTED });
     text(`Pagina ${page} / ${pages}`, right, 291, { size: 7, color: MUTED, align: 'right' });
   }
   return doc;
 }
 
-export async function downloadMaintenanceReport(state) {
+export async function downloadActivityReport(state) {
   const snapshot = structuredClone(state);
   const generatedAt = new Date();
-  const doc = await createMaintenanceReport(snapshot, generatedAt);
+  const doc = await createActivityReport(snapshot, generatedAt);
   doc.save(reportFilename(snapshot.bike || {}, generatedAt));
 }

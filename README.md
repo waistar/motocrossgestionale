@@ -61,19 +61,20 @@ controlla periodicamente la scheda Actions. Riferimenti:
 [Supabase Project Pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
 e [GitHub Actions: schedule](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 
-## Report PDF degli interventi
+## Report PDF delle attività recenti
 
-In **Attività recenti → Esporta report PDF** scarichi un documento A4 con marchio
+In **Attività recenti → Esporta attività PDF** scarichi un documento A4 con marchio
 410 La Placa, marca, modello, anno, numero identificativo, contaore attuale e storico
-completo degli interventi. La tabella riporta data, orario, descrizione, contaore
-all'intervento e note tecniche, dal più recente al meno recente. La ricerca attiva
-sullo schermo non limita il contenuto del PDF. I report lunghi continuano su più
-pagine, con intestazioni e numeri di pagina.
+completo di interventi, allenamenti e uscite. La tabella riporta data, tipo,
+attività o pista, ore e note, dal più recente al meno recente. Per le uscite e gli
+allenamenti mostra le ore di utilizzo aggiunte; per gli interventi mostra il
+contaore al momento della manutenzione. La ricerca attiva sullo schermo non limita
+il contenuto del PDF. I report lunghi continuano su più pagine, con intestazioni
+e numeri di pagina.
 
-Il modulo **Registra intervento** include ora un orario modificabile; come proposta
-iniziale usa l'ora locale corrente. Gli interventi esistenti conservano i dati
-originali: se l'orario non era stato salvato, nel PDF appare **Non registrato**.
-I backup JSON includono il nuovo campo `time` senza richiedere modifiche SQL.
+Il modulo degli interventi richiede la data, senza campo orario. Il PDF non mostra
+orari né avvisi per orari mancanti. Eventuali orari presenti nei vecchi backup
+rimangono conservati nei dati originali.
 
 La generazione avviene nel browser, usando file inclusi nel repository. I dati del
 report non vengono inviati a servizi di conversione esterni. Librerie incluse:
