@@ -30,3 +30,33 @@ Gestionale statico per motocross: contaore, uscite, manutenzioni eseguite e prog
 - I dati del vecchio gestionale localStorage **non migrano automaticamente**. Esporta il backup JSON dalla versione precedente, quindi importalo in questa dopo l'accesso.
 - Le email di conferma dipendono dalla configurazione di Supabase; il servizio di posta predefinito ha limitazioni.
 - Le scadenze sono visualizzate nell'app: non inviano notifiche push/email automatiche.
+
+## Heartbeat automatico con GitHub Actions
+
+Il workflow `.github/workflows/supabase-heartbeat.yml` esegue una query `SELECT 1`
+su Supabase due volte al giorno (06:17 e 18:17 UTC). Usa una funzione dedicata,
+`garage_heartbeat`, che non legge né modifica gli archivi degli utenti.
+L'accesso al gestionale e le policy sui dati del garage restano privati.
+
+Per attivarlo:
+
+1. Nel progetto Supabase, apri **SQL Editor**, incolla `heartbeat.sql` e premi **Run**.
+2. Carica su GitHub `heartbeat.sql`, `scripts/supabase_heartbeat.py` e la cartella
+   `.github/workflows` sul branch predefinito del repository.
+3. Apri **Actions → Supabase heartbeat → Run workflow** per il primo controllo.
+   Se GitHub chiede di abilitare Actions, abilitalo prima dell'esecuzione.
+4. Un'esecuzione riuscita scrive `Heartbeat OK` nei log; un errore fa fallire il job.
+   Per ricevere gli avvisi, abilita le notifiche GitHub Actions per le esecuzioni fallite.
+
+URL e chiave pubblica vengono letti da `config.js`, senza nuove dipendenze,
+credenziali utente o chiavi amministrative. Non servono GitHub Secrets aggiuntivi.
+In locale puoi verificare la stessa query con `python3 scripts/supabase_heartbeat.py`.
+Gli errori temporanei di rete, HTTP 429 e HTTP 5xx vengono ritentati fino a tre volte.
+Se il progetto è già sospeso, ripristinalo prima dal dashboard Supabase.
+
+Il heartbeat genera attività, ma non garantisce che Supabase escluda un progetto
+Free dalla sospensione. Inoltre GitHub può ritardare le esecuzioni pianificate e,
+nei repository pubblici, disabilitarle dopo 60 giorni senza attività nel repository:
+controlla periodicamente la scheda Actions. Riferimenti:
+[Supabase Project Pausing](https://supabase.com/docs/guides/platform/free-project-pausing)
+e [GitHub Actions: schedule](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
