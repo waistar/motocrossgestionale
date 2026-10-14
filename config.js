@@ -1,3 +1,3 @@
 // Chiave PUBBLICA Supabase (anon o publishable); NON inserire mai secret/service_role.
-export const SUPABASE_URL = 'INCOLLA_URL_SUPABASE';
-export const SUPABASE_ANON_KEY = 'INCOLLA_CHIAVE_PUBBLICA_SUPABASE';
+export const SUPABASE_URL = 'https://nxsughmqjbjatwmvfbhe.supabase.co/rest/v1/';
+export const SUPABASE_ANON_KEY = 'sb_publishable_s0K2Tz760WZVYzuMd7X8JA_7fwPwikT';
