@@ -16,3 +16,7 @@
 @media(max-width:700px){.topbar{min-height:58px}.top-actions{width:100%;gap:7px}.top-actions #quickSession,.top-actions #quickWork{flex:1;font-size:10px;padding:9px 6px}}
 
 .tag.activity-session{background:#302c39;color:#d4c4f2}.tag.activity-work{background:#38291f;color:#ffab73}
+
+.heading-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}.btn:disabled{opacity:.65;cursor:wait}@media(max-width:700px){.heading-actions{width:100%}.heading-actions .btn{flex:1}}
+
+.activity-table{min-width:760px}.activity-table td:first-child{white-space:nowrap}
