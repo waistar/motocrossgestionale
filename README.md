@@ -22,6 +22,19 @@ Gestionale statico per motocross: contaore, uscite, manutenzioni eseguite e prog
 - Per recuperare i dati su Mac/iPhone, apri **lo stesso URL Vercel** e accedi con **la stessa email e password**.
 - **Backup**: Moto e dati > Esporta backup JSON; conserva il file in un luogo sicuro. Per ripristinare: Importa backup JSON (sostituisce l'archivio dell'account).
 
+## Registra uscita: durata o contaore finale
+
+Nel modulo **Registra uscita** puoi scegliere **Durata dell’uscita**, inserendo le
+ore di utilizzo, oppure **Contaore finale della moto**, inserendo le ore totali
+lette sulla moto dopo l’uscita. Il riepilogo mostra la durata calcolata e il nuovo
+contaore prima del salvataggio. Ad esempio, con un contaore attuale di 24,5 h e una
+lettura finale di 26 h, vengono registrate 1,5 h di uscita.
+
+Il calcolo usa il contaore attuale del gestionale; la lettura finale deve essere
+maggiore di questo valore. Se il contatore di partenza non è corretto, aggiornalo
+prima con **Contaore → Imposta contaore**. Sono supportati incrementi di 0,1 h;
+la durata viene salvata come prima, mantenendo compatibili storico, scadenze e PDF.
+
 ## Sicurezza e limiti
 - Non pubblicare segreti Supabase, database password, `service_role` o chiavi secret. È normale che l'URL e la chiave anon/publishable siano pubblici; RLS è indispensabile.
 - I dati sono associati al singolo account, non condivisi automaticamente tra account diversi. La pagina Vercel è pubblica, **ma le informazioni salvate sono protette dall'autenticazione e da RLS**.

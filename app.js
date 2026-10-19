@@ -1,6 +1,7 @@
 'use strict';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { calculateSessionHours } from './session-hours.js';
 import { downloadActivityReport } from './report.js?v=34a7873530';
 const KEY='motolog-mx-v1';
 const configured=SUPABASE_URL.startsWith('https://') && SUPABASE_ANON_KEY.length>25;
@@ -57,7 +58,45 @@ function renderActivities(){
 }
 let onModalSave=null;const field=(title,html)=>`<label>${title}${html}</label>`;
 function modal(eyebrow,title,fields,handler){$('modalEyebrow').textContent=eyebrow;$('modalTitle').textContent=title;$('modalFields').innerHTML=fields;onModalSave=handler;$('modal').showModal()}
-function sessionModal(){modal('CONTAORE','Registra una nuova uscita',field('Data',`<input name="date" type="date" value="${today()}" required>`)+field('Pista / nome uscita','<input name="name" placeholder="Es. Allenamento pista" required maxlength="120">')+field('Ore motore utilizzate','<input name="hours" type="number" step="0.1" min="0.1" max="1000" placeholder="Es. 1.5" required>')+field('Note facoltative','<textarea name="notes" maxlength="2000" placeholder="Condizioni, regolazioni, osservazioni..."></textarea>'),fd=>{const h=Number(fd.get('hours'));if(!Number.isFinite(h)||h<=0||h>1000)throw Error('Inserisci ore valide.');state.sessions.push({id:uid(),date:fd.get('date'),name:String(fd.get('name')).trim(),hours:h,notes:String(fd.get('notes')).trim()});save();notify('Uscita registrata')})}
+function sessionModal(){
+ modal('CONTAORE','Registra una nuova uscita',
+  field('Data',`<input name="date" type="date" value="${today()}" required>`)+
+  field('Pista / nome uscita','<input name="name" placeholder="Es. Allenamento pista" required maxlength="120">')+
+  field('Come vuoi inserire le ore?',`<select name="hoursMode"><option value="duration">Durata dell’uscita</option><option value="meter">Contaore finale della moto</option></select>`)+
+  `<p class="muted">Contaore attuale: <strong>${fmt(hours())} h</strong></p>`+
+  field('<span id="sessionHoursLabel">Ore motore utilizzate</span>','<input name="hours" type="number" step="0.1" min="0.1" max="1000" placeholder="Es. 1.5" aria-describedby="sessionHoursPreview" required>')+
+  '<output class="session-hours-preview" id="sessionHoursPreview" aria-live="polite">Inserisci la durata dell’uscita.</output>'+
+  field('Note facoltative','<textarea name="notes" maxlength="2000" placeholder="Condizioni, regolazioni, osservazioni..."></textarea>'),
+  fd=>{
+   const h=calculateSessionHours(fd.get('hours'),fd.get('hoursMode'),hours());
+   state.sessions.push({id:uid(),date:fd.get('date'),name:String(fd.get('name')).trim(),hours:h,notes:String(fd.get('notes')).trim()});
+   save();notify('Uscita registrata');
+  });
+ const form=$('modalForm'),mode=form.elements.hoursMode,input=form.elements.hours,preview=$('sessionHoursPreview');
+ const updatePreview=()=>{
+  input.setCustomValidity('');preview.classList.remove('invalid');
+  if(input.value===''){
+   preview.textContent=mode.value==='meter'?'Inserisci le ore totali che leggi sulla moto dopo l’uscita.':'Inserisci la durata dell’uscita.';
+   return;
+  }
+  try{
+   const duration=calculateSessionHours(input.value,mode.value,hours());
+   preview.textContent=`Durata uscita: ${fmt(duration)} h · Contaore dopo l’uscita: ${fmt(hours()+duration)} h`;
+  }catch(error){
+   input.setCustomValidity(error.message);preview.textContent=error.message;preview.classList.add('invalid');
+  }
+ };
+ mode.onchange=()=>{
+  const meter=mode.value==='meter';
+  $('sessionHoursLabel').textContent=meter?'Ore totali della moto dopo l’uscita':'Ore motore utilizzate';
+  input.min=String(meter?Math.round((hours()+0.1)*10)/10:0.1);
+  input.max=String(meter?Math.round((hours()+1000)*10)/10:1000);
+  input.placeholder=meter?`Es. ${fmt(hours()+1.5)}`:'Es. 1.5';
+  input.value='';updatePreview();
+ };
+ input.oninput=updatePreview;
+}
+
 function workModal(ruleId=''){const rule=state.rules.find(r=>r.id===ruleId);const options='<option value="">Nessuna scadenza collegata</option>'+state.rules.map(r=>`<option value="${escapeHTML(r.id)}" ${r.id===ruleId?'selected':''}>${escapeHTML(r.name)}</option>`).join('');modal('OFFICINA','Registra un intervento',field('Intervento',`<input name="name" value="${escapeHTML(rule?.name||'')}" placeholder="Es. Cambio olio" required maxlength="150">`)+field('Data',`<input name="date" type="date" value="${today()}" required>`)+field('Contaore al momento dell’intervento',`<input name="meter" type="number" min="0" step="0.1" value="${fmt(hours())}" required>`)+field('Collega alla manutenzione programmata',`<select name="ruleId">${options}</select>`)+field('Note tecniche','<textarea name="notes" maxlength="2000" placeholder="Materiali utilizzati, controlli, osservazioni..."></textarea>'),fd=>{const meter=Number(fd.get('meter'));if(!Number.isFinite(meter)||meter<0)throw Error('Contaore non valido');state.works.push({id:uid(),name:String(fd.get('name')).trim(),date:fd.get('date'),meter,ruleId:fd.get('ruleId'),notes:String(fd.get('notes')).trim()});save();notify('Intervento registrato')})}
 function ruleModal(){modal('PROGRAMMA','Nuova scadenza',field('Nome manutenzione','<input name="name" placeholder="Es. Sostituzione pistone" required maxlength="150">')+field('Ripeti ogni N ore motore (facoltativo)','<input name="intervalHours" type="number" min="0" step="0.1" placeholder="Es. 40">')+field('Ripeti ogni N giorni (facoltativo)','<input name="intervalDays" type="number" min="0" step="1" placeholder="Es. 90">')+'<p class="muted">Compila almeno uno dei due intervalli. Se li compili entrambi, vale la prima scadenza raggiunta.</p>'+field('Ore di partenza',`<input name="startHours" type="number" min="0" step="0.1" value="${fmt(hours())}" required>`)+field('Data di partenza',`<input name="startDate" type="date" value="${today()}" required>`),fd=>{const ih=Number(fd.get('intervalHours')),id=Number(fd.get('intervalDays'));if((ih<=0&&id<=0)||ih<0||id<0)throw Error('Inserisci almeno un intervallo positivo.');state.rules.push({id:uid(),name:String(fd.get('name')).trim(),intervalHours:ih||null,intervalDays:id||null,startHours:Number(fd.get('startHours')),startDate:fd.get('startDate')});save();notify('Scadenza aggiunta')})}
 function adjustModal(){modal('CONTATORE','Imposta contaore',`<p class="muted">Imposta le ore totali attuali. Le uscite già registrate restano in archivio: viene aggiornato il valore di partenza.</p>`+field('Ore totali attuali',`<input name="meter" type="number" min="0" step="0.1" value="${fmt(hours())}" required>`),fd=>{const target=Number(fd.get('meter'));if(!Number.isFinite(target)||target<0)throw Error('Valore non valido');state.baseHours=target-state.sessions.reduce((a,s)=>a+num(s.hours),0);save();notify('Contaore aggiornato')})}

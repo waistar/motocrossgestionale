@@ -20,3 +20,5 @@
 .heading-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}.btn:disabled{opacity:.65;cursor:wait}@media(max-width:700px){.heading-actions{width:100%}.heading-actions .btn{flex:1}}
 
 .activity-table{min-width:760px}.activity-table td:first-child{white-space:nowrap}
+
+.session-hours-preview{display:block;background:#28231f;border:1px solid #493f38;border-left:3px solid #ff6600;border-radius:8px;padding:12px 14px;color:#efc7ad;font-size:12px;line-height:1.7}.session-hours-preview.invalid{color:#ffaaaa;border-left-color:#ff9696}
