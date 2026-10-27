@@ -44,9 +44,15 @@ function activities(){
   ...state.works.map(w=>({...w,type:'work',label:'Intervento'}))
  ].sort((a,b)=>b.date.localeCompare(a.date));
 }
+let activityType='all';
+function setActivityType(type){
+ activityType=type;
+ document.querySelectorAll('#activityFilter [data-filter]').forEach(b=>{const on=b.dataset.filter===type;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on))});
+ renderActivities();
+}
 function renderActivities(){
  const q=$('activitySearch').value.trim().toLocaleLowerCase('it');
- const rows=activities().filter(a=>[a.name,a.notes,a.label].join(' ').toLocaleLowerCase('it').includes(q));
+ const rows=activities().filter(a=>(activityType==='all'||a.type===activityType)&&[a.name,a.notes,a.label].join(' ').toLocaleLowerCase('it').includes(q));
  $('activitiesTable').innerHTML=rows.length?rows.map(a=>`<tr>
  <td>${dateIT(a.date)}</td>
  <td><span class="tag ${a.type==='session'?'activity-session':'activity-work'}">${a.label}</span></td>
@@ -54,7 +60,7 @@ function renderActivities(){
  <td>${a.type==='session'?`+${fmt(a.hours)} h <small>di utilizzo</small>`:`${fmt(a.meter)} h <small>contaore</small>`}</td>
  <td>${escapeHTML(a.notes||'—')}</td>
  <td><button class="delete" data-delete="${a.type}" data-id="${escapeHTML(a.id)}" aria-label="Elimina ${a.type==='session'?'uscita':'intervento'}">✕</button></td>
- </tr>`).join(''):`<tr><td colspan="6" class="empty">${q?'Nessuna attività corrisponde alla ricerca.':'Nessuna attività registrata. Aggiungi un’uscita o un intervento.'}</td></tr>`;
+ </tr>`).join(''):`<tr><td colspan="6" class="empty">${q||activityType!=='all'?'Nessuna attività corrisponde ai filtri.':'Nessuna attività registrata. Aggiungi un’uscita o un intervento.'}</td></tr>`;
 }
 let onModalSave=null;const field=(title,html)=>`<label>${title}${html}</label>`;
 function modal(eyebrow,title,fields,handler){$('modalEyebrow').textContent=eyebrow;$('modalTitle').textContent=title;$('modalFields').innerHTML=fields;onModalSave=handler;$('modal').showModal()}
@@ -103,7 +109,7 @@ function adjustModal(){modal('CONTATORE','Imposta contaore',`<p class="muted">Im
 $('modalForm').addEventListener('submit',ev=>{ev.preventDefault();const form=$('modalForm');if(!form.reportValidity())return;try{onModalSave(new FormData(form));$('modal').close()}catch(e){alert(e.message||'Dati non validi')}});
 document.addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target.matches('[role="button"][data-goto]')){ev.preventDefault();ev.target.click()}});
 $('closeModal').onclick=$('cancelModal').onclick=()=>$('modal').close();
-document.addEventListener('click',ev=>{const p=ev.target.closest('[data-page],[data-goto]');if(p)navigate(p.dataset.page||p.dataset.goto,p.dataset.rule);const complete=ev.target.closest('[data-complete]');if(complete)workModal(complete.dataset.complete);const del=ev.target.closest('[data-delete]');if(del&&confirm('Confermi l’eliminazione?')){const map={session:'sessions',work:'works',rule:'rules'},arr=map[del.dataset.delete];if(arr){state[arr]=state[arr].filter(x=>x.id!==del.dataset.id);save();notify('Elemento eliminato')}}});
+document.addEventListener('click',ev=>{const p=ev.target.closest('[data-page],[data-goto]');if(p){if(p.dataset.filterType)setActivityType(p.dataset.filterType);navigate(p.dataset.page||p.dataset.goto,p.dataset.rule)}const filter=ev.target.closest('#activityFilter [data-filter]');if(filter)setActivityType(filter.dataset.filter);const complete=ev.target.closest('[data-complete]');if(complete)workModal(complete.dataset.complete);const del=ev.target.closest('[data-delete]');if(del&&confirm('Confermi l’eliminazione?')){const map={session:'sessions',work:'works',rule:'rules'},arr=map[del.dataset.delete];if(arr){state[arr]=state[arr].filter(x=>x.id!==del.dataset.id);save();notify('Elemento eliminato')}}});
 $('quickSession').onclick=$('newSession').onclick=sessionModal;$('quickWork').onclick=$('newWork').onclick=()=>workModal();$('newRule').onclick=ruleModal;$('adjustHours').onclick=adjustModal;$('editMoto').onclick=()=>navigate('settings');$('activitySearch').oninput=renderActivities;
 $('bikeForm').onsubmit=ev=>{ev.preventDefault();const f=ev.currentTarget;state.bike={brand:f.elements.brand.value.trim(),model:f.elements.model.value.trim(),year:f.elements.year.value,number:f.elements.number.value.trim()};save();notify('Moto salvata')};
 $('exportReport').onclick=async()=>{
