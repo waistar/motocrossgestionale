@@ -112,7 +112,7 @@ $('exportReport').onclick=async()=>{
  catch(error){notify('Impossibile creare il PDF. Riprova.');console.error('Esportazione report PDF non riuscita',error)}
  finally{button.disabled=false;button.textContent='↓ Esporta attività PDF'}
 };
-$('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='motolog-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+$('exportData').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='motocross-gestionale-backup-'+today()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 $('importData').onclick=()=>$('importFile').click();$('importFile').onchange=async ev=>{const file=ev.target.files[0];if(!file)return;try{if(file.size>10_000_000)throw Error('File troppo grande');const d=JSON.parse(await file.text());if(!valid(d)||d.sessions.some(s=>!s.id||!s.date)||d.works.some(w=>!w.id||!w.date)||d.rules.some(r=>!r.id||!r.name))throw Error('Formato backup non valido');if(confirm('Sostituire tutti i dati ONLINE con questo backup?')){state=d;save();notify('Backup ripristinato')}}catch(e){alert('Impossibile importare: '+e.message)}ev.target.value=''};
 $('resetData').onclick=()=>{if(confirm('Eliminare definitivamente tutti i dati ONLINE? Questa operazione non si può annullare.')&&confirm('Ultima conferma: eliminare tutto?')){state=seed();save();notify('Dati azzerati')}};
 

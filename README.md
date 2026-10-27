@@ -1,4 +1,4 @@
-# MotoLog MX Cloud — Vercel + Supabase
+# Motocross Gestionale — Vercel + Supabase
 
 Gestionale statico per motocross: contaore, uscite, manutenzioni eseguite e programmate, moto, export/import backup JSON. **Nessuna gestione spese**.
 
