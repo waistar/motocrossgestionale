@@ -22,3 +22,4 @@
 .activity-table{min-width:760px}.activity-table td:first-child{white-space:nowrap}
 
 .session-hours-preview{display:block;background:#28231f;border:1px solid #493f38;border-left:3px solid #ff6600;border-radius:8px;padding:12px 14px;color:#efc7ad;font-size:12px;line-height:1.7}.session-hours-preview.invalid{color:#ffaaaa;border-left-color:#ff9696}
+.metric-link,.entry[data-goto]{cursor:pointer;transition:border-color .15s,background .15s}.metric-link:hover{border-color:#ff6600}.metric-link:focus-visible,.entry[data-goto]:focus-visible{outline:2px solid #ff6600;outline-offset:2px}.entry[data-goto]{margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:8px}.entry[data-goto]:hover{background:#25201c}.rule-card.flash{animation:rule-flash 1.6s ease-out}@keyframes rule-flash{0%,30%{border-color:#ff6600;box-shadow:0 0 0 2px #ff660066}100%{border-color:#372f29;box-shadow:none}}
